@@ -102,6 +102,6 @@ class SimGRACE(PreTrain):
                     
                 
                 torch.save(self.gnn.state_dict(),
-                           "./Experiment/pre_trained_model/{}/{}.{}.{}.{}.pth".format(self.dataset_name, 'SimGRACE','config_' + str(self.config_name) , self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
+                           "./Experiment/pre_trained_model/{}/{}.{}.{}.{}.pth".format(self.dataset_name, 'SimGRACE','config_' + str(self.config_name) , self.gnn_type, 'epoch_' + str(epoch)))
                 
-                self._logger.info("+++model saved ! {}.{}.{}.{}.pth".format(self.dataset_name, 'SimGRACE','config_' + str(self.config_name) ,self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
+                self._logger.info("+++model saved ! {}.{}.{}.{}.pth".format(self.dataset_name, 'SimGRACE','config_' + str(self.config_name) ,self.gnn_type, 'epoch_' + str(epoch)))

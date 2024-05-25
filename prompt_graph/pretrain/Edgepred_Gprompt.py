@@ -79,6 +79,6 @@ class Edgepred_Gprompt(PreTrain):
                     os.makedirs(folder_path)
 
                 torch.save(self.gnn.state_dict(),
-                           "./Experiment/pre_trained_model/{}/{}/{}.{}.pth".format(self.dataset_name, 'Edgepred_Gprompt','config_' + str(self.config_name) , self.gnn_type))
+                           "./Experiment/pre_trained_model/{}/{}/{}.{}.{}.pth".format(self.dataset_name, 'Edgepred_Gprompt','config_' + str(self.config_name) , self.gnn_type, 'epoch_' + str(epoch)))
                 
-                self._logger.info("+++model saved ! ./Experiment/pre_trained_model/{}/{}/{}.{}.pth".format(self.dataset_name, 'Edgepred_Gprompt','config_' + str(self.config_name) , self.gnn_type))
+                self._logger.info("+++model saved ! ./Experiment/pre_trained_model/{}/{}/{}.{}.{}.pth".format(self.dataset_name, 'Edgepred_Gprompt','config_' + str(self.config_name) , self.gnn_type, 'epoch_' + str(epoch)))
