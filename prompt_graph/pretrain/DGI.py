@@ -98,7 +98,7 @@ class DGI(PreTrain):
             
 
 
-    def pretrain(self):
+    def pretrain(self, epochs=100, lr=0.001):
         num_epoch = self.epochs
         train_loss_min = 1000000
         
