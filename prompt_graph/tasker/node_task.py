@@ -34,7 +34,7 @@ class NodeTask(BaseTask):
       def create_few_data_folder(self):
             # 创建文件夹并保存数据
             for k in range(1, 11):
-                  k_shot_folder = './Experiment/sample_data/Node/Node/'+ self.dataset_name +'/' + str(k) +'_shot'
+                  k_shot_folder = './Experiment/sample_data/Node/'+ self.dataset_name +'/' + str(k) +'_shot'
                   os.makedirs(k_shot_folder, exist_ok=True)
                   
                   for i in range(1, 6):
@@ -62,7 +62,7 @@ class NodeTask(BaseTask):
             # self.data.to('cpu')
             self.input_dim = self.dataset.num_features
             self.output_dim = self.dataset.num_classes
-            file_path = './Experiment/induced_graph/' + self.dataset_name + '/induced_graph.pkl'
+            file_path = './induced_graph/' + self.dataset_name + '/induced_graph.pkl'
             if os.path.exists(file_path):
                   with open(file_path, 'rb') as f:
                         graphs_list = pickle.load(f)

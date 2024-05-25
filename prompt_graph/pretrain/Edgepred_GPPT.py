@@ -59,23 +59,24 @@ class Edgepred_GPPT(PreTrain):
 
         return accum_loss / total_step
 
-    def pretrain(self):
-        num_epoch = self.epochs
+    def pretrain(self, epochs=100, lr=0.001):
+        num_epoch = epochs
         train_loss_min = 1000000
         for epoch in range(1, num_epoch + 1):
             st_time = time.time()
             train_loss = self.pretrain_one_epoch()
-            print(f"[Pretrain] Epoch {epoch}/{num_epoch} | Train Loss {train_loss:.5f} | "
+            self._logger.info(f"[Pretrain] Epoch {epoch}/{num_epoch} | Train Loss {train_loss:.5f} | "
                   f"Cost Time {time.time() - st_time:.3}s")
             
-            if train_loss_min > train_loss:
+            # if train_loss_min > train_loss:
+            if epoch in [50, 100, 500, 1000, 10000]:
                 train_loss_min = train_loss
-                folder_path = f"./Experiment/pre_trained_model/{self.dataset_name}"
+                folder_path = f"./Experiment/pre_trained_model/{self.dataset_name}/Edgepred_GPPT"
                 if not os.path.exists(folder_path):
                     os.makedirs(folder_path)
                     
                 torch.save(self.gnn.state_dict(),
-                           "./Experiment/pre_trained_model/{}/{}.{}.{}.pth".format(self.dataset_name, 'Edgepred_GPPT', self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
+                           "./Experiment/pre_trained_model/{}/{}/{}.{}.pth".format(self.dataset_name, 'Edgepred_GPPT','config_' + str(self.config_name) , self.gnn_type))
                 
-                print("+++model saved ! {}.{}.{}.{}.pth".format(self.dataset_name, 'Edgepred_GPPT', self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
+                self._logger.info("+++model saved !./Experiment/pre_trained_model/{}/{}/{}.{}.pth".format(self.dataset_name, 'Edgepred_GPPT','config_' + str(self.config_name) , self.gnn_type))
 

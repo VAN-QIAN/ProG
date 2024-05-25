@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.data import Batch, Data
 from prompt_graph.utils import act
-from deprecated.sphinx import deprecated
+# from deprecated.sphinx import deprecated
 from sklearn.cluster import KMeans
 from torch_geometric.nn.inits import glorot
 

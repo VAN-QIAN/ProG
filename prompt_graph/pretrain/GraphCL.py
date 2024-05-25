@@ -11,8 +11,10 @@ import os
 from.base import PreTrain
 
 class GraphCL(PreTrain):
-    def __init__(self, *args, **kwargs):    # hid_dim=16
+    def __init__(self, *args ,**kwargs):    # hid_dim=16
         super().__init__(*args, **kwargs)
+        print('GraphCL hid_dim:')
+        print(self.hid_dim)
         self.load_graph_data()
         self.initialize_gnn(self.input_dim, self.hid_dim)   
         self.projection_head = torch.nn.Sequential(torch.nn.Linear(self.hid_dim, self.hid_dim),
@@ -94,7 +96,7 @@ class GraphCL(PreTrain):
 
         return train_loss_accum / total_step
 
-    def pretrain(self, batch_size=10, aug1='dropN', aug2="permE", aug_ratio=None, lr=0.01, decay=0.0001, epochs=100):
+    def pretrain(self, batch_size=10, aug1='dropN', aug2="permE", aug_ratio=None, lr=0.01, decay=0.0, epochs=100):
         
         self.to(self.device)
         loader1, loader2 = self.get_loader(self.graph_list, batch_size, aug1=aug1, aug2=aug2)
@@ -106,13 +108,16 @@ class GraphCL(PreTrain):
             train_loss = self.train_graphcl(loader1, loader2, optimizer)
 
             print("***epoch: {}/{} | train_loss: {:.8}".format(epoch, epochs, train_loss))
-
-            if train_loss_min > train_loss:
+            
+            # if train_loss_min > train_loss:
+            if epoch in [50, 100, 500, 1000, 10000]:
                 train_loss_min = train_loss
-                folder_path = f"./Experiment/pre_trained_model/{self.dataset_name}"
+                folder_path = f"./Experiment/pre_trained_model/{self.dataset_name}/GraphCL"
                 if not os.path.exists(folder_path):
                     os.makedirs(folder_path)
-
+                    
+                
                 torch.save(self.gnn.state_dict(),
-                           "./Experiment/pre_trained_model/{}/{}.{}.{}.pth".format(self.dataset_name, 'GraphCL', self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
-                print("+++model saved ! {}.{}.{}.{}.pth".format(self.dataset_name, 'GraphCL', self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
+                           "./Experiment/pre_trained_model/{}/{}/{}.{}.pth".format(self.dataset_name, 'GraphCL','config_' + str(self.config_name) , self.gnn_type))
+                
+                self._logger.info("+++model saved ! ./Experiment/pre_trained_model/{}/{}/{}.{}.pth".format(self.dataset_name, 'GraphCL','config_' + str(self.config_name) , self.gnn_type))

@@ -82,7 +82,7 @@ class SimGRACE(PreTrain):
 
         return train_loss_accum / total_step
 
-    def pretrain(self, batch_size=10, lr=0.01,decay=0.0001, epochs=100):
+    def pretrain(self, batch_size=10, lr=0.01,decay=0.0, epochs=100):
 
         loader = self.get_loader(self.graph_list, batch_size)
         print('start training {} | {} | {}...'.format(self.dataset_name, 'SimGRACE', self.gnn_type))
@@ -94,11 +94,14 @@ class SimGRACE(PreTrain):
 
             print("***epoch: {}/{} | train_loss: {:.8}".format(epoch, epochs, train_loss))
 
-            if train_loss_min > train_loss:
+            if epoch in [50, 100, 500, 1000, 10000]:
                 train_loss_min = train_loss
                 folder_path = f"./Experiment/pre_trained_model/{self.dataset_name}"
                 if not os.path.exists(folder_path):
                     os.makedirs(folder_path)
+                    
+                
                 torch.save(self.gnn.state_dict(),
-                           "./Experiment/pre_trained_model/{}/{}.{}.{}.pth".format(self.dataset_name, 'SimGRACE', self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
-                print("+++model saved ! {}.{}.{}.{}.pth".format(self.dataset_name, 'SimGRACE', self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
+                           "./Experiment/pre_trained_model/{}/{}.{}.{}.{}.pth".format(self.dataset_name, 'SimGRACE','config_' + str(self.config_name) , self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
+                
+                self._logger.info("+++model saved ! {}.{}.{}.{}.pth".format(self.dataset_name, 'SimGRACE','config_' + str(self.config_name) ,self.gnn_type, str(self.hid_dim) + 'hidden_dim'))

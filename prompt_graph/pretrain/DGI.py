@@ -99,19 +99,24 @@ class DGI(PreTrain):
 
 
     def pretrain(self):
+        num_epoch = self.epochs
         train_loss_min = 1000000
+        
         for epoch in range(1, self.epochs + 1):
-            time0 = time.time()
+            st_time = time.time()
             self.optimizer.zero_grad()
             train_loss = self.pretrain_one_epoch()
-            print("***epoch: {}/{} | train_loss: {:.8}".format(epoch, self.epochs , train_loss))
+            self._logger.info(f"[Pretrain] Epoch {epoch}/{num_epoch} | Train Loss {train_loss:.5f} | "
+                  f"Cost Time {time.time() - st_time:.3}s")
 
             
-            if train_loss_min > train_loss:
+            # if train_loss_min > train_loss:
+            if epoch in [50, 100, 500, 1000, 10000]:
                 train_loss_min = train_loss
-                folder_path = f"./Experiment/pre_trained_model/{self.dataset_name}"
+                folder_path = f"./Experiment/pre_trained_model/{self.dataset_name}/DGI"
                 if not os.path.exists(folder_path):
                     os.makedirs(folder_path)
                 torch.save(self.gnn.state_dict(),
-                           "./Experiment/pre_trained_model/{}/{}.{}.{}.pth".format(self.dataset_name, 'DGI', self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
-                print("+++model saved ! {}.{}.{}.{}.pth".format(self.dataset_name, 'DGI', self.gnn_type, str(self.hid_dim) + 'hidden_dim'))
+                           "./Experiment/pre_trained_model/{}/{}/{}.{}.pth".format(self.dataset_name, 'DGI', 'config_' + str(self.config_name) , self.gnn_type))
+                
+                self._logger.info("+++model saved !./Experiment/pre_trained_model/{}/{}/{}.{}.pth".format(self.dataset_name, 'DGI','config_' + str(self.config_name) , self.gnn_type))
