@@ -5,7 +5,7 @@
     "nhid": 256,
     "num_layer": 3,
     "pnhid": 128,
-    "num_epochs": 100,
+    "num_epochs": 10000,
     "drop_edge_rate1": 0.1,
     "drop_edge_rate2": 0.6,
     "drop_feature_rate1": 0.3,
