@@ -52,7 +52,7 @@ def gen_ran_output(data, model):
 
 # used in pre_train.py
 def load_data4pretrain(dataname='CiteSeer', num_parts=200):
-    data = pk.load(open('../Dataset/{}/feature_reduced.data'.format(dataname), 'br'))
+    data = pk.load(open('Dataset/{}/feature_reduced.data'.format(dataname), 'br'))
     print(data)
 
     x = data.x.detach()
@@ -61,25 +61,38 @@ def load_data4pretrain(dataname='CiteSeer', num_parts=200):
     data = Data(x=x, edge_index=edge_index)
     input_dim = data.x.shape[1]
     hid_dim = input_dim
-    graph_list = list(ClusterData(data=data, num_parts=num_parts, save_dir='../Dataset/{}/'.format(dataname)))
+    graph_list = list(ClusterData(data=data, num_parts=num_parts, save_dir='Dataset/{}/'.format(dataname)))
 
     return graph_list, input_dim, hid_dim
 
 
 # used in prompt.py
+# def act(x=None, act_type='leakyrelu'):
+#     if act_type == 'leakyrelu':
+#         if x is None:
+#             return torch.nn.LeakyReLU()
+#         else:
+#             return F.leaky_relu(x)
+#     elif act_type == 'tanh':
+#         if x is None:
+#             return torch.nn.Tanh()
+#         else:
+#             return torch.tanh(x)
+
 def act(x=None, act_type='leakyrelu'):
     if act_type == 'leakyrelu':
-        if x is None:
-            return torch.nn.LeakyReLU()
-        else:
-            return F.leaky_relu(x)
+        return torch.nn.LeakyReLU() if x is None else F.leaky_relu(x)
     elif act_type == 'tanh':
-        if x is None:
-            return torch.nn.Tanh()
-        else:
-            return torch.tanh(x)
-
-
+        return torch.nn.Tanh() if x is None else torch.tanh(x)
+    elif act_type == 'relu':
+        return torch.nn.ReLU() if x is None else F.relu(x)
+    elif act_type == 'sigmoid':
+        return torch.nn.Sigmoid() if x is None else torch.sigmoid(x)
+    elif act_type == 'softmax':
+        # 注意：softmax 需要指定维度；这里假设对最后一个维度进行softmax
+        return torch.nn.Softmax(dim=-1) if x is None else F.softmax(x, dim=-1)
+    else:
+        raise ValueError(f"Unsupported activation type: {act_type}")
 
 
 

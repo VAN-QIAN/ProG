@@ -10,18 +10,38 @@ from ProG.data import multi_class_NIG
 import torch
 from torch_geometric.loader import DataLoader
 from ProG.eva import acc_f1_over_batches
+from ProG.model import GAT, GCN, GCov, GIN, GraphSAGE, GraphTransformer
 
-
+def initialize_gnn(input_dim, hid_dim, out_dim, num_layer=2, gnn_type='GCN'):
+        if gnn_type == 'GAT':
+            gnn = GAT(input_dim=input_dim, hid_dim=out_dim, num_layer=num_layer)
+        elif gnn_type == 'GCN':
+            gnn = GCN(input_dim=input_dim, hid_dim=out_dim, num_layer=num_layer)
+        elif gnn_type == 'GraphSAGE':
+            gnn = GraphSAGE(input_dim=input_dim, hid_dim=out_dim, num_layer=num_layer)
+        elif gnn_type == 'GIN':
+            gnn = GIN(input_dim=input_dim, hid_dim=out_dim, num_layer=num_layer)
+        elif gnn_type == 'GCov':
+            gnn = GCov(input_dim=input_dim, hid_dim=out_dim, num_layer=num_layer)
+        elif gnn_type == 'GraphTransformer':
+            gnn = GraphTransformer(input_dim=input_dim, hid_dim=out_dim, num_layer=num_layer)
+        else:
+            raise ValueError(f"Unsupported GNN type: {gnn_type}")
+            
+        return gnn
 # this file can not move in ProG.utils.py because it will cause self-loop import
-def model_create(dataname, gnn_type, num_class, task_type='multi_class_classification', tune_answer=True):
+def model_create(dataname, gnn_type, num_class,pre_train,config_num, epoch_num ,task_type='multi_class_classification', tune_answer=True):
     if task_type in ['multi_class_classification', 'regression']:
-        input_dim, hid_dim = 100, 100
+        input_dim, hid_dim = 3703, 256
         lr, wd = 0.001, 0.00001
         tnpc = 100  # token number per class
-
+ 
         # load pre-trained GNN
-        gnn = GNN(input_dim, hid_dim=hid_dim, out_dim=hid_dim, gcn_layer_num=2, gnn_type=gnn_type)
-        pre_train_path = './pre_trained_gnn/{}.GraphCL.{}.pth'.format(dataname, gnn_type)
+        # gnn = GNN(input_dim, hid_dim=hid_dim, out_dim=hid_dim, gcn_layer_num=2, gnn_type=gnn_type)
+        gnn = initialize_gnn(input_dim, hid_dim, hid_dim, num_layer=2, gnn_type=gnn_type)
+        print(gnn_type)
+        pre_train_path = './pre_trained_model/{}/{}/config_{}.{}.epoch_{}.pth'.format(dataname,pre_train,config_num,gnn_type ,epoch_num )
+        print(pre_train_path)
         gnn.load_state_dict(torch.load(pre_train_path))
         print("successfully load pre-trained weights for gnn! @ {}".format(pre_train_path))
         for p in gnn.parameters():
@@ -81,13 +101,13 @@ def pretrain():
              lr=0.01, decay=0.0001, epochs=100)
 
 
-def prompt_w_o_h(dataname="CiteSeer", gnn_type="TransformerConv", num_class=6, task_type='multi_class_classification'):
+def prompt_w_o_h(dataname="CiteSeer", gnn_type="TransformerConv", pre_train='GraphCL',config_num=0,epoch_num =50 ,num_class=6, task_type='multi_class_classification'):
     _, _, train_list, test_list = multi_class_NIG(dataname, num_class, shots=100)
 
     train_loader = DataLoader(train_list, batch_size=10, shuffle=True)
     test_loader = DataLoader(test_list, batch_size=10, shuffle=True)
 
-    gnn, PG, opi_pg, lossfn, answering, opi_answer = model_create(dataname, gnn_type, num_class, task_type, False)
+    gnn, PG, opi_pg, lossfn, answering, opi_answer = model_create(dataname, gnn_type, num_class,pre_train, config_num ,epoch_num , task_type, False)
     # Here we have: answering, opi_answer=None, None
     lossfn.to(device)
     
@@ -170,13 +190,13 @@ def train_one_outer_epoch(epoch, train_loader, opi, lossfn, gnn, PG, answering):
                 running_loss = 0.
 
 
-def prompt_w_h(dataname="CiteSeer", gnn_type="TransformerConv", num_class=6, task_type='multi_class_classification'):
+def prompt_w_h(dataname="CiteSeer", gnn_type="TransformerConv", pre_train='GraphCL',epoch_num =50 ,num_class=6, task_type='multi_class_classification'):
     _, _, train_list, test_list = multi_class_NIG(dataname, num_class, shots=100)
 
     train_loader = DataLoader(train_list, batch_size=10, shuffle=True)
     test_loader = DataLoader(test_list, batch_size=10, shuffle=True)
 
-    gnn, PG, opi_pg, lossfn, answering, opi_answer = model_create(dataname, gnn_type, num_class, task_type, True)
+    gnn, PG, opi_pg, lossfn, answering, opi_answer = model_create(dataname, gnn_type, num_class,pre_train, epoch_num , task_type, True)
     answering.to(device)
 
     # inspired by: Hou Y et al. MetaPrompting: Learning to Learn Better Prompts. COLING 2022
@@ -207,6 +227,25 @@ def prompt_w_h(dataname="CiteSeer", gnn_type="TransformerConv", num_class=6, tas
         acc_f1_over_batches(test_loader, PG, gnn, answering, num_class, task_type, device = device)     
 
 
+import argparse
+import torch
+
+def run_program(args):
+    print("PyTorch version:", torch.__version__)
+
+    if torch.cuda.is_available():
+        print("CUDA is available")
+        print("CUDA version:", torch.version.cuda)
+        device = torch.device("cuda:6")
+    else:
+        print("CUDA is not available")
+        device = torch.device("cpu")
+
+    print(f"Using device: {device}")
+
+    # Example function call (replace with actual function)
+    print(f"Running with dataname={args.dataname}, gnn_type={args.gnn_type}, pre_train={args.pre_train}, epoch_num={args.epoch_num}, num_class={args.num_class}")
+
 
 if __name__ == '__main__':
     print("PyTorch version:", torch.__version__)
@@ -221,9 +260,17 @@ if __name__ == '__main__':
 
     print(device)
     # device = torch.device('cpu')
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataname", type=str, required=True)
+    parser.add_argument("--gnn_type", type=str, required=True)
+    parser.add_argument("--pre_train", type=str, required=True)
+    parser.add_argument("--config_num", type=int, required=True)
+    parser.add_argument("--epoch_num", type=int, required=True)
+    parser.add_argument("--num_class", type=int, required=True)
+    args = parser.parse_args()
     # pretrain()
     # prompt_w_o_h(dataname="Cora", gnn_type="TransformerConv", num_class=7, task_type='multi_class_classification')
     # prompt_w_h(dataname="Cora", gnn_type="TransformerConv", num_class=7, task_type='multi_class_classification')
-    prompt_w_o_h(dataname="CiteSeer", gnn_type="TransformerConv", num_class=6, task_type='multi_class_classification')
+    print(f"Running with dataname={args.dataname}, gnn_type={args.gnn_type}, pre_train={args.pre_train}, epoch_num={args.epoch_num}, num_class={args.num_class}")
+    prompt_w_o_h(dataname=args.dataname, gnn_type=args.gnn_type, pre_train=args.pre_train,config_num=args.config_num ,epoch_num=args.epoch_num, num_class=args.num_class, task_type="multi_class_classification")
     # prompt_w_h(dataname="CiteSeer", gnn_type="TransformerConv", num_class=6, task_type='multi_class_classification')

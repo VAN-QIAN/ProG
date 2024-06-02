@@ -18,7 +18,7 @@ def nodes_split(data: Data, dataname: str = None, node_classes=3):
     if dataname is None:
         raise KeyError("dataname is None!")
 
-    index_path = './dataset/{}/index/'.format(dataname)
+    index_path = './Dataset/{}/index/'.format(dataname)
     mkdir(index_path)
 
     node_labels = data.y
@@ -68,7 +68,7 @@ def edge_split(data, dataname: str = None, node_classes=3):
     if dataname is None:
         raise KeyError("dataname is None!")
 
-    index_path = './dataset/{}/index/'.format(dataname)
+    index_path = './Dataset/{}/index/'.format(dataname)
     mkdir(index_path)
 
     node_labels = data.y
@@ -121,7 +121,7 @@ def induced_graphs_nodes(data, dataname: str = None, num_classes=3, smallest_siz
     if dataname is None:
         raise KeyError("dataname is None!")
 
-    induced_graphs_path = './dataset/{}/induced_graphs/'.format(dataname)
+    induced_graphs_path = './Dataset/{}/induced_graphs/'.format(dataname)
     mkdir(induced_graphs_path)
 
     edge_index = data.edge_index
@@ -131,7 +131,7 @@ def induced_graphs_nodes(data, dataname: str = None, num_classes=3, smallest_siz
     for i in range(0, num_classes):  # TODO: remember to reset to num_classies!
         for t in ['train', 'test']:
             for d in ['support', 'query']:
-                fname = './dataset/{}/index/task{}.meta.{}.{}'.format(dataname, i, t, d)
+                fname = './Dataset/{}/index/task{}.meta.{}.{}'.format(dataname, i, t, d)
                 fnames.append(fname)
 
     for fname in fnames:
@@ -200,7 +200,7 @@ def induced_graphs_edges(data, dataname: str = None, num_classes=3, smallest_siz
     if dataname is None:
         raise KeyError("dataname is None!")
 
-    induced_graphs_path = './dataset/{}/induced_graphs/'.format(dataname)
+    induced_graphs_path = './Dataset/{}/induced_graphs/'.format(dataname)
     mkdir(induced_graphs_path)
 
     edge_index = data.edge_index
@@ -210,7 +210,7 @@ def induced_graphs_edges(data, dataname: str = None, num_classes=3, smallest_siz
     for task_id in range(num_classes, 2 * num_classes):
         for t in ['train', 'test']:
             for d in ['support', 'query']:
-                fname = './dataset/{}/index/task{}.meta.{}.{}'.format(dataname, task_id, t, d)
+                fname = './Dataset/{}/index/task{}.meta.{}.{}'.format(dataname, task_id, t, d)
                 fnames.append(fname)
 
 
@@ -288,7 +288,7 @@ def induced_graphs_graphs(data, dataname: str = None, num_classes=3, smallest_si
     if dataname is None:
         raise KeyError("dataname is None!")
 
-    induced_graphs_path = './dataset/{}/induced_graphs/'.format(dataname)
+    induced_graphs_path = './Dataset/{}/induced_graphs/'.format(dataname)
     mkdir(induced_graphs_path)
 
     node_labels = data.y
@@ -429,10 +429,10 @@ def load_tasks(meta_stage: str, task_pairs: list, dataname: str = None, K_shot=N
     while i < len(task_pairs) and i < max_iteration:
         task_1, task_2 = task_pairs[i]
 
-        task_1_support = './dataset/{}/induced_graphs/task{}.meta.{}.support'.format(dataname, task_1, meta_stage)
-        task_1_query = './dataset/{}/induced_graphs/task{}.meta.{}.query'.format(dataname, task_1, meta_stage)
-        task_2_support = './dataset/{}/induced_graphs/task{}.meta.{}.support'.format(dataname, task_2, meta_stage)
-        task_2_query = './dataset/{}/induced_graphs/task{}.meta.{}.query'.format(dataname, task_2, meta_stage)
+        task_1_support = './Dataset/{}/induced_graphs/task{}.meta.{}.support'.format(dataname, task_1, meta_stage)
+        task_1_query = './Dataset/{}/induced_graphs/task{}.meta.{}.query'.format(dataname, task_1, meta_stage)
+        task_2_support = './Dataset/{}/induced_graphs/task{}.meta.{}.support'.format(dataname, task_2, meta_stage)
+        task_2_query = './Dataset/{}/induced_graphs/task{}.meta.{}.query'.format(dataname, task_2, meta_stage)
 
         with (open(task_1_support, 'br') as t1s,
               open(task_1_query, 'br') as t1q,
@@ -449,42 +449,42 @@ def load_tasks(meta_stage: str, task_pairs: list, dataname: str = None, K_shot=N
 
 
 if __name__ == '__main__':
-    dataname = 'Computers'  # 'CiteSeer'  # 'PubMed' 'Cora'
+    dataname = 'CiteSeer'  # 'CiteSeer'  # 'PubMed' 'Cora'
     #
-    # if dataname in ['CiteSeer', 'PubMed', 'Cora']:
-    #     dataset = Planetoid(root='./dataset/', name=dataname)
+    if dataname in ['CiteSeer', 'PubMed', 'Cora']:
+        Dataset = Planetoid(root='./Dataset/', name=dataname)
     # elif dataname=='Computers':
-    #     dataset = Amazon(root='./dataset/', name=dataname)
+    #     Dataset = Amazon(root='./Dataset/', name=dataname)
     #
     #
     #
-    # data = dataset.data
+    data = Dataset.data
     # # this is legitimate on Cora, CiteSeer, and PubMed. but it refers to graph num classes for ENZYMES
-    # node_classes = dataset.num_classes
+    node_classes = Dataset.num_classes
     #
     # # step1 use SVD to reduce input-dim as 100 (PubMed: from 500 to 100 | CiteSeer from 3,703 to 100. )
     # # TODO: next, we will try to make Cora from 1433 to 100, and Reddit from 602 to 100,
-    # #  then we can further study transfer issues across different datasets.
-    feature_reduce = SVDFeatureReduction(out_channels=100)
+    # #  then we can further study transfer issues across different Datasets.
+    # feature_reduce = SVDFeatureReduction(out_channels=100)
     # data = feature_reduce(data)
-    # pk.dump(data, open('./dataset/{}/feature_reduced.data'.format(dataname), 'bw'))
+    pk.dump(data, open('./Dataset/{}/feature_reduced.data'.format(dataname), 'bw'))
 
-    data = pk.load(open('./dataset/{}/feature_reduced.data'.format(dataname), 'br'))
-    node_classes=10
+    data = pk.load(open('./Dataset/{}/feature_reduced.data'.format(dataname), 'br'))
+    # node_classes=7
     # # step2 split node and edge
     #
-    # nodes_split(data, dataname=dataname, node_classes=node_classes)
-    # edge_split(data, dataname=dataname, node_classes=node_classes)
+    nodes_split(data, dataname=dataname, node_classes=node_classes)
+    edge_split(data, dataname=dataname, node_classes=node_classes)
     #
     # # step3: induced graphs
-    # induced_graphs_nodes(data, dataname=dataname, num_classes=node_classes, smallest_size=100,
-    #                      largest_size=300)
-    # induced_graphs_edges(data, dataname=dataname, num_classes=node_classes, smallest_size=100,
-    #                      largest_size=300)
+    induced_graphs_nodes(data, dataname=dataname, num_classes=node_classes, smallest_size=100,
+                         largest_size=300)
+    induced_graphs_edges(data, dataname=dataname, num_classes=node_classes, smallest_size=100,
+                         largest_size=300)
     induced_graphs_graphs(data, dataname=dataname, num_classes=node_classes, smallest_size=100,
                           largest_size=300)
 
-    # aa=pk.load(open('./dataset/PubMed/induced_graphs/task4.meta.test.query', 'br'))
+    # aa=pk.load(open('./Dataset/PubMed/induced_graphs/task4.meta.test.query', 'br'))
     # g=aa['pos'][0]
     # print(g.x)
     # print(g.edge_index)

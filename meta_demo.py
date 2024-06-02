@@ -19,7 +19,8 @@ def meta_test_adam(meta_test_task_id_list,
                    seed,
                    maml, gnn,
                    adapt_steps_meta_test,
-                   lossfn):
+                   lossfn,
+                   device):
     # meta-testing
     if len(meta_test_task_id_list) < 2:
         raise AttributeError("\ttask_id_list should contain at leat two tasks!")
@@ -57,7 +58,7 @@ def meta_test_adam(meta_test_task_id_list,
                     running_loss = 0.
 
         test_model.eval()
-        acc_f1_over_batches(query_loader, test_model.PG, gnn, test_model.answering, 2, 'multi_class_classification')
+        acc_f1_over_batches(query_loader, test_model.PG, gnn, test_model.answering, 2, 'multi_class_classification', device)
         ## DO NOT DELETE the following content!
         # metric = torchmetrics.classification.Accuracy(task="binary")  # , num_labels=2)
         # for batch_id, query_batch in enumerate(query_loader):
@@ -143,7 +144,7 @@ def model_components():
     """
     input_dim, dataname, gcn_layer_num=2, hid_dim=16, num_classes=2,
                  task_type="multi_label_classification",
-                 token_num=10, cross_prune=0.1, inner_prune=0.3, gnn_type='TransformerConv'
+                 token_num=10, cross_prune=0.1, inner_prune=0.3, gnn_type='GCN'
 
     :param args:
     :param round:
@@ -176,12 +177,23 @@ def model_components():
 
 
 if __name__ == '__main__':
-    dataname = 'CiteSeer'
+    print("PyTorch version:", torch.__version__)
+
+    if torch.cuda.is_available():
+        print("CUDA is available")
+        print("CUDA version:", torch.version.cuda)
+        device = torch.device("cuda")
+    else:
+        print("CUDA is not available")
+        device = torch.device("cpu")
+
+    print(device)
+    dataname = 'Cora'
     # node-level: 0 1 2 3 4 5
     # edge-level: 6 7 8 9 10 11
     # graph-level: 12 13 14 15 16 17
-    meta_train_task_id_list = [0, 1, 2, 3]
-    meta_test_task_id_list = [4, 5]
+    meta_train_task_id_list = [0, 1, 2]
+    meta_test_task_id_list = [3, 4, 5]
 
     pre_train_method = 'GraphCL'
     gnn_type = ['TransformerConv']
@@ -193,6 +205,6 @@ if __name__ == '__main__':
                     dataname, adapt_steps=2, K_shot=100)
 
     # meta testing on target tasks
-    adapt_steps_meta_test = 2  # 00  # 50
+    adapt_steps_meta_test = 10  # 00  # 50
     meta_test_adam(meta_test_task_id_list, dataname, 100, seed, maml, gnn,
-                   adapt_steps_meta_test, lossfn)
+                   adapt_steps_meta_test, lossfn, device)

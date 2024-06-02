@@ -175,12 +175,12 @@ if __name__ == '__main__':
     # do not use '../pre_trained_gnn/' because hope there should be two folders: (1) '../pre_trained_gnn/'  and (2) './pre_trained_gnn/'
     # only selected pre-trained models will be moved into (1) so that we can keep reproduction
 
-    # pretext = 'GraphCL' 
-    pretext = 'SimGRACE' 
+    pretext = 'GraphCL' 
+    # pretext = 'SimGRACE' 
     gnn_type = 'TransformerConv'  
     # gnn_type = 'GAT'
     # gnn_type = 'GCN'
-    dataname, num_parts = 'CiteSeer', 200
+    dataname, num_parts = 'Cora', 200
     graph_list, input_dim, hid_dim = load_data4pretrain(dataname, num_parts)
 
     pt = PreTrain(pretext, gnn_type, input_dim, hid_dim, gln=2)
