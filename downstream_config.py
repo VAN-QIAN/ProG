@@ -13,6 +13,75 @@ from ProG.eva import acc_f1_over_batches
 from ProG.model import GAT, GCN, GCov, GIN, GraphSAGE, GraphTransformer
 from ProG.utils import mkdir
 from ProG.config_parser import ConfigParser
+import os
+import logging
+from logging import getLogger
+import datetime
+import sys
+import random
+
+def get_local_time():
+    """
+    获取时间
+
+    Return:
+        datetime: 时间
+    """
+    cur = datetime.datetime.now()
+    cur = cur.strftime('%b-%d-%Y_%H-%M-%S')
+    return cur
+
+def get_logger(config, name=None):
+    """
+    获取Logger对象
+
+    Args:
+        config(ConfigParser): config
+        name: specified name
+
+    Returns:
+        Logger: logger
+    """
+    log_dir = './log'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    log_filename = '{}-{}-{}-{}-{}.log'.format(config['model'],config['dataset'],
+                                            config['config_file'], config['exp_id'], get_local_time())
+    logfilepath = os.path.join(log_dir, log_filename)
+
+    logger = logging.getLogger(name)
+
+    log_level = config.get('log_level', 'INFO')
+
+    if log_level.lower() == 'info':
+        level = logging.INFO
+    elif log_level.lower() == 'debug':
+        level = logging.DEBUG
+    elif log_level.lower() == 'error':
+        level = logging.ERROR
+    elif log_level.lower() == 'warning':
+        level = logging.WARNING
+    elif log_level.lower() == 'critical':
+        level = logging.CRITICAL
+    else:
+        level = logging.INFO
+
+    logger.setLevel(level)
+
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler = logging.FileHandler(logfilepath)
+    file_handler.setFormatter(formatter)
+
+    console_formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(message)s')
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(console_formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    logger.info('Log directory: %s', log_dir)
+    return logger
 
 def initialize_gnn(input_dim, hid_dim, out_dim, num_layer=2, gnn_type='GCN'):
         if gnn_type == 'GAT':
@@ -40,6 +109,10 @@ def model_create(dataname, gnn_type, num_class,pre_train,config_num, epoch_num ,
             input_dim = 1433
         elif dataname == 'CiteSeer':
             input_dim = 3703
+        elif dataname == 'PubMed':
+            input_dim = 500
+        elif dataname == 'Computers':
+            input_dim = 767
         hid_dim = config.get('nhid')
         num_layer = config.get('num_layer')
         lr, wd = 0.001, 0.00001
@@ -48,11 +121,11 @@ def model_create(dataname, gnn_type, num_class,pre_train,config_num, epoch_num ,
         # load pre-trained GNN
         # gnn = GNN(input_dim, hid_dim=hid_dim, out_dim=hid_dim, gcn_layer_num=2, gnn_type=gnn_type)
         gnn = initialize_gnn(input_dim, hid_dim, hid_dim, num_layer=num_layer, gnn_type=gnn_type)
-        print(gnn_type)
+        logger.info(gnn_type)
         pre_train_path = './pre_trained_model/{}/{}/config_{}.{}.epoch_{}.pth'.format(dataname,pre_train,config_num,gnn_type ,epoch_num )
-        print(pre_train_path)
+        logger.info(pre_train_path)
         gnn.load_state_dict(torch.load(pre_train_path))
-        print("successfully load pre-trained weights for gnn! @ {}".format(pre_train_path))
+        logger.info("successfully load pre-trained weights for gnn! @ {}".format(pre_train_path))
         for p in gnn.parameters():
             p.requires_grad = False
 
@@ -93,6 +166,7 @@ def model_create(dataname, gnn_type, num_class,pre_train,config_num, epoch_num ,
 
 
 def prompt_w_o_h(dataname="CiteSeer", gnn_type="TransformerConv", pre_train='GraphCL',config_num=0,epoch_num =50 ,num_class=6, task_type='multi_class_classification'):
+    logger = getLogger()
     _, _, train_list, test_list = multi_class_NIG(dataname, num_class, shots=100)
 
     train_loader = DataLoader(train_list, batch_size=10, shuffle=True)
@@ -109,7 +183,7 @@ def prompt_w_o_h(dataname="CiteSeer", gnn_type="TransformerConv", pre_train='Gra
     for j in range(1, prompt_epoch + 1):
         running_loss = 0.
         for batch_id, train_batch in enumerate(train_loader):
-            # print(train_batch)
+            # logger.info(train_batch)
             train_batch = train_batch.to(device)
             emb0 = gnn(train_batch.x, train_batch.edge_index, train_batch.batch)
             pg_batch = PG.inner_structure_update()
@@ -131,7 +205,7 @@ def prompt_w_o_h(dataname="CiteSeer", gnn_type="TransformerConv", pre_train='Gra
 
             if batch_id % 5 == 4:  # report every 5 updates
                 last_loss = running_loss / 5  # loss per batch
-                print(
+                logger.info(
                     'epoch {}/{} | batch {}/{} | loss: {:.8f}'.format(j, prompt_epoch, batch_id+1, len(train_loader),
                                                                       last_loss))
 
@@ -149,21 +223,22 @@ def prompt_w_o_h(dataname="CiteSeer", gnn_type="TransformerConv", pre_train='Gra
 
 
 def train_one_outer_epoch(epoch, train_loader, opi, lossfn, gnn, PG, answering):
+    logger = getLogger()
     for j in range(1, epoch + 1):
         running_loss = 0.
         # bar2=tqdm(enumerate(train_loader))
         for batch_id, train_batch in enumerate(train_loader):  # bar2
-            # print(train_batch)
+            # logger.info(train_batch)
             train_batch = train_batch.to(device)
             prompted_graph = PG(train_batch)
-            # print(prompted_graph)
+            # logger.info(prompted_graph)
 
             graph_emb = gnn(prompted_graph.x, prompted_graph.edge_index, prompted_graph.batch)
-            # print(graph_emb)
+            # logger.info(graph_emb)
             pre = answering(graph_emb)
-            # print(pre)
+            # logger.info(pre)
             train_loss = lossfn(pre, train_batch.y)
-            # print('\t\t==> answer_epoch {}/{} | batch {} | loss: {:.8f}'.format(j, answer_epoch, batch_id,
+            # logger.info('\t\t==> answer_epoch {}/{} | batch {} | loss: {:.8f}'.format(j, answer_epoch, batch_id,
             #                                                                     train_loss.item()))
 
             opi.zero_grad()
@@ -175,13 +250,14 @@ def train_one_outer_epoch(epoch, train_loader, opi, lossfn, gnn, PG, answering):
                 last_loss = running_loss / 5  # loss per batch
                 # bar2.set_description('answer_epoch {}/{} | batch {} | loss: {:.8f}'.format(j, answer_epoch, batch_id,
                 #                                                                     last_loss))
-                print(
+                logger.info(
                     'epoch {}/{} | batch {}/{} | loss: {:.8f}'.format(j, epoch, batch_id, len(train_loader), last_loss))
 
                 running_loss = 0.
 
 
 def prompt_w_h(dataname="CiteSeer", gnn_type="TransformerConv", pre_train='GraphCL',epoch_num =50 ,num_class=6, task_type='multi_class_classification'):
+    logger = getLogger()
     _, _, train_list, test_list = multi_class_NIG(dataname, num_class, shots=100)
 
     train_loader = DataLoader(train_list, batch_size=10, shuffle=True)
@@ -200,13 +276,13 @@ def prompt_w_h(dataname="CiteSeer", gnn_type="TransformerConv", pre_train='Graph
 
     # training stage
     for i in range(1, outer_epoch + 1):
-        print(("{}/{} frozen gnn | frozen prompt | *tune answering function...".format(i, outer_epoch)))
+        logger.info(("{}/{} frozen gnn | frozen prompt | *tune answering function...".format(i, outer_epoch)))
         # tune task head
         answering.train()
         PG.eval()
         train_one_outer_epoch(answer_epoch, train_loader, opi_answer, lossfn, gnn, PG, answering)
 
-        print("{}/{}  frozen gnn | *tune prompt |frozen answering function...".format(i, outer_epoch))
+        logger.info("{}/{}  frozen gnn | *tune prompt |frozen answering function...".format(i, outer_epoch))
         # tune prompt
         answering.eval()
         PG.train()
@@ -221,35 +297,9 @@ def prompt_w_h(dataname="CiteSeer", gnn_type="TransformerConv", pre_train='Graph
 import argparse
 import torch
 
-def run_program(args):
-    print("PyTorch version:", torch.__version__)
-
-    if torch.cuda.is_available():
-        print("CUDA is available")
-        print("CUDA version:", torch.version.cuda)
-        device = torch.device("cuda:6")
-    else:
-        print("CUDA is not available")
-        device = torch.device("cpu")
-
-    print(f"Using device: {device}")
-
-    # Example function call (replace with actual function)
-    print(f"Running with dataname={args.dataname}, gnn_type={args.gnn_type}, pre_train={args.pre_train}, epoch_num={args.epoch_num}, num_class={args.num_class}")
-
 
 if __name__ == '__main__':
-    print("PyTorch version:", torch.__version__)
-
-    if torch.cuda.is_available():
-        print("CUDA is available")
-        print("CUDA version:", torch.version.cuda)
-        device = torch.device("cuda:6")
-    else:
-        print("CUDA is not available")
-        device = torch.device("cpu")
-
-    print(device)
+    
     # device = torch.device('cpu')
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataname", type=str, required=True)
@@ -259,10 +309,29 @@ if __name__ == '__main__':
     parser.add_argument("--epoch_num", type=int, required=True)
     parser.add_argument("--num_class", type=int, required=True)
     args = parser.parse_args()
+    config = {}
+    config['model'] = args.gnn_type
+    config['dataset'] = args.dataname
+    config['config_file'] = args.config_num
+    config['exp_id'] = int(random.SystemRandom().random() * 100000)
+    logger = get_logger(config)
+    logger.info("PyTorch version: {}".format(torch.__version__))
+
+    if torch.cuda.is_available():
+        logger.info("CUDA is available")
+        logger.info("CUDA version: {}".format(torch.version.cuda))
+        device = torch.device("cuda:0")
+    else:
+        logger.info("CUDA is not available")
+        device = torch.device("cpu")
+
+    logger.info(device)
     # pretrain()
     # prompt_w_o_h(dataname="Cora", gnn_type="TransformerConv", num_class=7, task_type='multi_class_classification')
     # prompt_w_h(dataname="Cora", gnn_type="TransformerConv", num_class=7, task_type='multi_class_classification')
-    print(f"Running with dataname={args.dataname}, gnn_type={args.gnn_type}, pre_train={args.pre_train}, epoch_num={args.epoch_num}, num_class={args.num_class}")
+    logger.info(f"Running with dataname={args.dataname}, gnn_type={args.gnn_type}, pre_train={args.pre_train}, epoch_num={args.epoch_num}, num_class={args.num_class}")
+    prompt_w_h(dataname=args.dataname, gnn_type=args.gnn_type, pre_train=args.pre_train,config_num=args.config_num ,epoch_num=args.epoch_num, num_class=args.num_class, task_type="multi_class_classification")
     
-    prompt_w_o_h(dataname=args.dataname, gnn_type=args.gnn_type, pre_train=args.pre_train,config_num=args.config_num ,epoch_num=args.epoch_num, num_class=args.num_class, task_type="multi_class_classification")
+    
+    # prompt_w_o_h(dataname=args.dataname, gnn_type=args.gnn_type, pre_train=args.pre_train,config_num=args.config_num ,epoch_num=args.epoch_num, num_class=args.num_class, task_type="multi_class_classification")
     # prompt_w_h(dataname="CiteSeer", gnn_type="TransformerConv", num_class=6, task_type='multi_class_classification')

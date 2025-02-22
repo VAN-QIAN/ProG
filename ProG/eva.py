@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import torchmetrics
 import warnings
-
+from logging import getLogger
 
 class Evaluator:
     def __init__(self, eval_metric='hits@50'):
@@ -173,6 +173,7 @@ def mrr_hit(normal_label: np.ndarray, pos_out: np.ndarray, metric: list = None):
 
 
 def acc_f1_over_batches(test_loader, PG, gnn, answering, num_class, task_type, device):
+    logger = getLogger()
     PG = PG.to("cpu")
     if answering is not None:
         answering = answering.to("cpu")
@@ -216,11 +217,11 @@ def acc_f1_over_batches(test_loader, PG, gnn, answering, num_class, task_type, d
 
         acc = accuracy(pre_cla, y)
         ma_f1 = macro_f1(pre_cla, y)
-        print("Batch {} Acc: {:.4f} | Macro-F1: {:.4f}".format(batch_id, acc.item(), ma_f1.item()))
+        logger.info("Batch {} Acc: {:.4f} | Macro-F1: {:.4f}".format(batch_id, acc.item(), ma_f1.item()))
 
     acc = accuracy.compute()
     ma_f1 = macro_f1.compute()
-    print("Final True Acc: {:.4f} | Macro-F1: {:.4f}".format(acc.item(), ma_f1.item()))
+    logger.info("Final True Acc: {:.4f} | Macro-F1: {:.4f}".format(acc.item(), ma_f1.item()))
     accuracy.reset()
     macro_f1.reset()
     PG = PG.to(device)

@@ -1,5 +1,19 @@
 #!/bin/bash
 
+# Assign variables
+TASK=$1
+MODEL=$2
+DATASET=$3
+CONFIG_FILE=$4
+
+
+TASK_CMD="python3 ./downstream_config.py --dataname "$dataname" --gnn_type "$gnn_type" --pre_train "$pre_train" --epoch_num $epoch_num --num_class $num_class --config_num $config_num > "logs/$log_file" 2>&1 "
+# Execute the task
+echo "Running command: ${TASK_CMD}"
+eval ${TASK_CMD}
+
+# Define the task command
+TASK_CMD="python3 ./run_pretrain.py --task ${TASK} --model ${MODEL} --dataset ${DATASET} --gpu_id 0 --config_file ${CONFIG_FILE}"
 # Define parameter arrays
 datanames=("CiteSeer") #"Cora"
 gnn_types=("GCN")
